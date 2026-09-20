@@ -401,7 +401,7 @@
     </div>
     <div class="dossier">
       <div class="dossier-cell"><div class="k">name</div><div class="v">Ubaid-ur-Rehman</div></div>
-      <div class="dossier-cell"><div class="k">education</div><div class="v">Matric</div></div>
+      <div class="dossier-cell"><div class="k">work</div><div class="v">Own Business</div></div>
       <div class="dossier-cell"><div class="k">founded</div><div class="v">UOBITECNOLOGY</div></div>
       <div class="dossier-cell"><div class="k">hobby</div><div class="v">Walking</div></div>
     </div>
@@ -439,6 +439,10 @@
         <div class="fl-text"><div class="k">main site</div><div class="fl-value">UOBITECNOLOGY</div></div>
         <span class="fl-arrow">↗</span>
       </a>
+      <a class="footer-link" href="https://youtube.com/@uobibyts?si=v0KiovaAw88hVBi1" target="_blank" rel="noopener">
+        <div class="fl-text"><div class="k">youtube</div><div class="fl-value">UOBI.ByTS 🎧</div></div>
+        <span class="fl-arrow">↗</span>
+      </a>
     </div>
     <div class="footer-row">
       <span>email — <a class="accent" href="mailto:ubaidurrehman00987@gmail.com">ubaidurrehman00987@gmail.com</a></span>
@@ -449,14 +453,69 @@
 </div>
 
 <script>
+  // ---------- sound fx engine (synthesized, no external files) ----------
+  const SFX = (function(){
+    let ctx = null;
+    let muted = false;
+    function ensureCtx(){
+      if(!ctx){
+        const AC = window.AudioContext || window.webkitAudioContext;
+        ctx = new AC();
+      }
+      if(ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    }
+    function tone({freq=440, dur=0.05, type='square', gain=0.05, glideTo=null}={}){
+      if(muted) return;
+      const c = ensureCtx();
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, c.currentTime);
+      if(glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, c.currentTime + dur);
+      g.gain.setValueAtTime(gain, c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + dur);
+      osc.connect(g); g.connect(c.destination);
+      osc.start();
+      osc.stop(c.currentTime + dur);
+    }
+    return {
+      key: () => tone({freq: 620 + Math.random()*80, dur: 0.02, type:'square', gain:0.035}),
+      hover: () => tone({freq: 880, dur: 0.035, type:'sine', gain:0.03, glideTo: 1200}),
+      click: () => tone({freq: 300, dur: 0.09, type:'square', gain:0.05, glideTo: 900}),
+      boot: () => tone({freq: 180, dur: 0.22, type:'sawtooth', gain:0.045, glideTo: 60}),
+      setMuted: (m) => { muted = m; },
+      isMuted: () => muted,
+    };
+  })();
+
+  // mute toggle button, injected into topbar
+  (function(){
+    const nav = document.querySelector('.topbar-inner');
+    const btn = document.createElement('button');
+    btn.setAttribute('aria-label', 'toggle sound');
+    btn.textContent = '♪';
+    btn.style.cssText = 'background:none;border:1px solid var(--line);color:var(--text-dim);border-radius:5px;width:28px;height:28px;font-size:13px;cursor:pointer;line-height:1;';
+    btn.addEventListener('click', () => {
+      const m = !SFX.isMuted();
+      SFX.setMuted(m);
+      btn.style.color = m ? 'var(--text-dimmer)' : 'var(--accent)';
+      btn.textContent = m ? '✕' : '♪';
+      if(!m) SFX.click();
+    });
+    nav.appendChild(btn);
+  })();
+
   // hero typing animation — single orchestrated load sequence
   (function(){
     const el = document.getElementById('typed');
     const text = "founder · multi-disciplinary builder · musician";
     let i = 0;
+    SFX.boot();
     function tick(){
       if(i <= text.length){
         el.textContent = text.slice(0, i);
+        if(text[i-1] && text[i-1] !== ' ') SFX.key();
         i++;
         setTimeout(tick, 32);
       }
@@ -491,6 +550,14 @@
       <span class="dir-tag">${f.tag}</span>
     </div>
   `).join('');
+
+  // interaction sound fx — dir rows, nav links, footer links
+  document.querySelectorAll('.dir-row, .topnav a, .footer-link').forEach(el => {
+    el.addEventListener('mouseenter', () => SFX.hover());
+  });
+  document.querySelectorAll('.topnav a, .footer-link').forEach(el => {
+    el.addEventListener('click', () => SFX.click());
+  });
 </script>
 
 </body>
